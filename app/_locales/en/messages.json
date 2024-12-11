@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "cryptobadge",
+    "description": "The name of the application"
+  },
+  "appDescription": {
+    "message": "A web tool for easy access to crypto data on web pages",
+    "description": "The description of the application"
+  }
+}
