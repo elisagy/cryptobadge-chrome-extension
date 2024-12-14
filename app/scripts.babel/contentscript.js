@@ -42,8 +42,8 @@ function replaceTextNodes(node) {
 
                         const bubbleElement = document.createElement("div");
                         bubbleElement.setAttribute("crypto-badge-data", "true");
-                        bubbleElement.setAttribute("style", "background-color: white !important; border: 2px solid orange !important; border-radius: 8px !important; display: none !important; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important; font-size: 14px !important; line-height: 1.5em; padding: 8px !important; position: fixed !important; right: 10px !important; top: 10px !important; text-align: left !important; width: 480px !important; z-index: 2147483647 !important");
-                        bubbleElement.innerHTML = `Address: ${data.address}<br>Asset: ${data.asset}<br>Balance: ${data.balance}<br>Last Update: ${(new Date(data.updatedDate)).toString()}`;
+                        bubbleElement.setAttribute("style", "background-color: white !important; border: 2px solid orange !important; border-radius: 8px !important; display: none !important; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important; font-size: 14px !important; line-height: 1.5em; padding: 8px !important; position: fixed !important; right: 10px !important; top: 10px !important; text-align: left !important; width: 600px !important; z-index: 2147483647 !important");
+                        bubbleElement.innerHTML = `<b>Address:</b> ${data.address}<br><b>Asset:</b> ${data.asset}<br><b>Balance:</b> ${data.balance}<br><b>First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b>Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b>Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
 
                         badgeElement.onmouseover = e => {
                             bubbleElement.style.setProperty("display", "block", "important");
