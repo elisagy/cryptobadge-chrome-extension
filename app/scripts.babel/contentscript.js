@@ -3,9 +3,17 @@
 const regex = {
     eth: /(0x[A-Fa-f0-9]{40})/g,
     btc: /((bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39})/g,
-};
+},
+    addresses = {},
+    openBubbles = [];
 
-const addresses = {};
+function closeAllBubbles() {
+    while (openBubbles.length) {
+        const openBubble = openBubbles.pop();
+        openBubble.element.style.setProperty("display", "none", "important");
+        openBubble.timeout && clearTimeout(openBubble.timeout);
+    }
+}
 
 function replaceTextNodes(node, symbol) {
     if (["script", "style"].includes(node.tagName?.toLowerCase()) || node.getAttribute?.("crypto-badge-data") === "true") {
@@ -52,6 +60,7 @@ function replaceTextNodes(node, symbol) {
                             background-repeat: no-repeat !important;
                             box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
                             border-radius: 8px !important;
+                            direction: ltr !important;
                             display: none !important;
                             font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important;
                             font-size: 14px !important;
@@ -63,13 +72,20 @@ function replaceTextNodes(node, symbol) {
                             width: 600px !important;
                             z-index: 2147483647 !important;
                         `);
-                        bubbleElement.innerHTML = `<b>Address:</b> ${data.address}<br><b>Asset:</b> ${data.asset}<br><b>Balance:</b> ${data.balance}<br><b>First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b>Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b>Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
+                        bubbleElement.innerHTML = `<b style="pointer-events: none;">Address:</b> ${data.address}<br><b style="pointer-events: none;">Asset:</b> ${data.asset}<br><b style="pointer-events: none;">Balance:</b> ${data.balance}<br><b style="pointer-events: none;">First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
+
+                        bubbleElement.onmouseover = e => {
+                            clearTimeout(openBubbles.find(({ element }) => element === e.target).timeout);
+                        };
+                        bubbleElement.onmouseout = closeAllBubbles;
 
                         badgeElement.onmouseover = e => {
+                            closeAllBubbles();
                             bubbleElement.style.setProperty("display", "block", "important");
+                            openBubbles.push({ element: bubbleElement });
                         };
                         badgeElement.onmouseout = e => {
-                            bubbleElement.style.setProperty("display", "none", "important");
+                            openBubbles.find(({ element }) => element === bubbleElement).timeout = setTimeout((bubbleElement) => bubbleElement.style.setProperty("display", "none", "important"), 1000, bubbleElement);
                         };
 
                         document.body.appendChild(bubbleElement);
