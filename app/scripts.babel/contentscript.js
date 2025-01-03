@@ -5,7 +5,8 @@ const regex = {
     btc: /((bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39})/g,
 },
     addresses = {},
-    openBubbles = [];
+    openBubbles = [],
+    prices = [];
 
 function closeAllBubbles() {
     while (openBubbles.length) {
@@ -14,6 +15,17 @@ function closeAllBubbles() {
         openBubble.timeout && clearTimeout(openBubble.timeout);
     }
 }
+
+(async (prices) => {
+    try {
+        const response = await fetch(`https://api.blockchain.com/v3/exchange/tickers`);
+        for (const price of await response.json()) {
+            prices.push(price);
+        }
+    }
+    catch (err) {
+    }
+})(prices)
 
 function replaceTextNodes(node, symbol) {
     if (["script", "style"].includes(node.tagName?.toLowerCase()) || node.getAttribute?.("crypto-badge-data") === "true") {
@@ -30,7 +42,7 @@ function replaceTextNodes(node, symbol) {
                     const address = addressSpan.innerText.trim();
 
                     if (!addresses[address]) {
-                        addresses[address] = (async (address, addressSpan) => {
+                        addresses[address] = (async (address) => {
                             try {
                                 const response = await fetch(`https://api.cryptobadge.info/${symbol}/addresses/${address.trim()}`);
                                 return await response.json();
@@ -38,7 +50,7 @@ function replaceTextNodes(node, symbol) {
                             catch (err) {
                                 return null;
                             }
-                        })(address, addressSpan);
+                        })(address);
                     }
 
                     addresses[address].then(((addressSpan) => (data) => {
@@ -72,7 +84,9 @@ function replaceTextNodes(node, symbol) {
                             width: 600px !important;
                             z-index: 2147483647 !important;
                         `);
-                        bubbleElement.innerHTML = `<b style="pointer-events: none;">Address:</b> ${data.address}<br><b style="pointer-events: none;">Asset:</b> ${data.asset}<br><b style="pointer-events: none;">Balance:</b> ${data.balance}<br><b style="pointer-events: none;">First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
+                        const price = prices.find(({ symbol: priceSymbol }) => priceSymbol === `${symbol.toUpperCase()}-USD`),
+                            formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", trailingZeroDisplay: "stripIfInteger" });
+                        bubbleElement.innerHTML = `<b style="pointer-events: none;">Address:</b> ${data.address}<br><b style="pointer-events: none;">Asset:</b> ${data.asset}<br><b style="pointer-events: none;">Balance:</b> ${data.balance}${price ? ` (~${formatter.format(price.last_trade_price * data.balance)})` : ``}<br><b style="pointer-events: none;">First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
 
                         bubbleElement.onmouseover = e => {
                             clearTimeout(openBubbles.find(({ element }) => element === e.target).timeout);
