@@ -2,6 +2,7 @@
 
 const regex = {
     eth: /(0x[A-Fa-f0-9]{40})/g,
+    doge: /(D{1}[5-9A-HJ-NP-U]{1}[1-9A-HJ-NP-Za-km-z]{32})/g,
     btc: /((bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39})/g,
 },
     addresses = {},
@@ -72,6 +73,7 @@ function replaceTextNodes(node, symbol) {
                             background-repeat: no-repeat !important;
                             box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
                             border-radius: 8px !important;
+                            color: black !important;
                             direction: ltr !important;
                             display: none !important;
                             font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important;
