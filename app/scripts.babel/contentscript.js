@@ -7,13 +7,35 @@ const regex = {
 },
     addresses = {},
     openBubbles = [],
-    prices = [];
+    prices = [],
+    infoElement = document.createElement("div");
+var addressesDoneCount = 0,
+    infoElementTimeout;
 
 function closeAllBubbles() {
     while (openBubbles.length) {
         const openBubble = openBubbles.pop();
         openBubble.element.style.setProperty("display", "none", "important");
         openBubble.timeout && clearTimeout(openBubble.timeout);
+    }
+}
+
+function updateInfoBubble() {
+    if (infoElement.getElementsByTagName("span")[0]) {
+        infoElement.getElementsByTagName("span")[0].innerHTML = `Loaded ${addressesDoneCount} out of ${Object.keys(addresses).length} addresses info`;
+    }
+    if (addressesDoneCount < Object.keys(addresses).length) {
+        if (infoElement.style.display === "none") {
+            infoElement.style.setProperty("display", "block", "important");
+        }
+        infoElementTimeout && clearTimeout(infoElementTimeout) && (infoElementTimeout = null);
+        infoElementTimeout = setTimeout((infoElement) => infoElement.style.setProperty("display", "none", "important"), 1000, infoElement);
+    }
+    else {
+        infoElementTimeout && clearTimeout(infoElementTimeout) && (infoElementTimeout = null);
+        if (infoElement.style.display !== "none") {
+            infoElement.style.setProperty("display", "none", "important");
+        }
     }
 }
 
@@ -52,6 +74,8 @@ function replaceTextNodes(node, symbol) {
                                 return null;
                             }
                         })(address);
+
+                        updateInfoBubble();
                     }
 
                     addresses[address].then(((addressSpan) => (data) => {
@@ -88,7 +112,7 @@ function replaceTextNodes(node, symbol) {
                         `);
                         const price = prices.find(({ symbol: priceSymbol }) => priceSymbol === `${symbol.toUpperCase()}-USD`),
                             formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", trailingZeroDisplay: "stripIfInteger" });
-                        bubbleElement.innerHTML = `<b style="pointer-events: none;">Address:</b> ${data.address}<br><b style="pointer-events: none;">Asset:</b> ${data.asset}<br><b style="pointer-events: none;">Balance:</b> ${data.balance}${price ? ` (~${formatter.format(price.last_trade_price * data.balance)})` : ``}<br><b style="pointer-events: none;">First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none;">Last Update:</b> ${(new Date(data.updatedDate)).toString()}`;
+                        bubbleElement.innerHTML = `<b style="pointer-events: none !important;">Address:</b> ${data.address}<br><b style="pointer-events: none !important;">Asset:</b> ${data.asset}<br><b style="pointer-events: none !important;">Balance:</b> ${data.balance}${price ? ` (~${formatter.format(price.last_trade_price * data.balance)})` : ``}<br><b style="pointer-events: none !important;">First Transaction Date:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none !important;">Last Transaction Date:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none !important;">Last Update:</b> ${(new Date(data.updatedDate)).toString()}${data.graphsDataURIs?.map(graphDataURI => `<br><br><img src="${graphDataURI}" style="pointer-events: none !important;">`).join("")}`;
 
                         bubbleElement.onmouseover = e => {
                             clearTimeout(openBubbles.find(({ element }) => element === e.target).timeout);
@@ -105,7 +129,11 @@ function replaceTextNodes(node, symbol) {
                         };
 
                         document.body.appendChild(bubbleElement);
-                    })(addressSpan));
+                    })(addressSpan))
+                        .finally(() => {
+                            addressesDoneCount++;
+                            updateInfoBubble();
+                        });
 
                     addressSpan.parentNode.setAttribute("crypto-badge-data", "true");
                 }
@@ -120,6 +148,29 @@ function replaceTextNodes(node, symbol) {
 for (const symbol in regex) {
     replaceTextNodes(document.body, symbol);
 }
+
+infoElement.setAttribute("crypto-badge-data", "true");
+infoElement.setAttribute("style", `
+    background-color: white !important;
+    background-position: top 8px right 8px;
+    background-repeat: no-repeat !important;
+    bottom: 10px !important;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    border-radius: 8px !important;
+    color: black !important;
+    direction: ltr !important;
+    display: none !important;
+    font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.5em; padding: 8px !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    right: 10px !important;
+    text-align: left !important;
+    z-index: 2147483647 !important;
+`);
+infoElement.innerHTML = `<img style="pointer-events: none !important;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAwHpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjabVBBEsMgCLzzij4BAQ08xzR2pj/o84tBO7HtZliBdTYItNfzAbcOSgKSNy1WCjrExKh6ohioJyeUk0eBM1n68BHIW+wnR6ll3J/9hItTqp7li5Heh7Cvgsnw1y8jioP7RD0/hpENI6YQ0jCo8Swsptv1CXvDFRoBnUTXsX/qzbd3ZP8PEzVOjM7MJQbgHgJcXaBgv9i/6mHOmaeZL+TfnibgDdSlWQRcDVXTAAABhWlDQ1BJQ0MgcHJvZmlsZQAAeJx9kT1Iw0AcxV9TpaIVByuIOGSoThZERXQrVSyChdJWaNXB5NIPoUlDkuLiKLgWHPxYrDq4OOvq4CoIgh8gzg5Oii5S4v+SQosYD4778e7e4+4dINTLTDU7ooCqWUYqHhOzuRUx8IogejCAWYxLzNQT6YUMPMfXPXx8vYvwLO9zf45eJW8ywCcSR5luWMTrxNObls55nzjESpJCfE48ZtAFiR+5Lrv8xrnosMAzQ0YmNUccIhaLbSy3MSsZKvEUcVhRNcoXsi4rnLc4q+Uqa96TvzCY15bTXKc5jDgWkUASImRUsYEyLERo1UgxkaL9mId/yPEnySWTawOMHPOoQIXk+MH/4He3ZmFywk0KxoDOF9v+GAECu0CjZtvfx7bdOAH8z8CV1vJX6sDMJ+m1lhY+Avq2gYvrlibvAZc7wOCTLhmSI/lpCoUC8H5G35QD+m+B7lW3t+Y+Th+ADHW1dAMcHAKjRcpe83h3V3tv/55p9vcDMfRy8+Ibv08AAA12aVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJYTVAgQ29yZSA0LjQuMC1FeGl2MiI+CiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiCiAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICB4bWxuczpHSU1QPSJodHRwOi8vd3d3LmdpbXAub3JnL3htcC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgeG1wTU06RG9jdW1lbnRJRD0iZ2ltcDpkb2NpZDpnaW1wOmZhOGI2NjhmLTI4NWYtNDUxMS1hNjQ3LWViMzViNmY5Nzc1NSIKICAgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDoyOGY2MjhhNi0xMTMwLTRlMzgtYTg3Yy0zOWMwOTYzYjQxNGYiCiAgIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpjN2JhYmY1ZC04YWYyLTQwNjUtOGU0Yy01ZmU3NTI3MGZhYWQiCiAgIGRjOkZvcm1hdD0iaW1hZ2UvcG5nIgogICBHSU1QOkFQST0iMi4wIgogICBHSU1QOlBsYXRmb3JtPSJXaW5kb3dzIgogICBHSU1QOlRpbWVTdGFtcD0iMTczMzk1NDk5MjgyMTUwNyIKICAgR0lNUDpWZXJzaW9uPSIyLjEwLjM2IgogICB0aWZmOk9yaWVudGF0aW9uPSIxIgogICB4bXA6Q3JlYXRvclRvb2w9IkdJTVAgMi4xMCIKICAgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyNDoxMjoxMlQwMDowOTo1MCswMjowMCIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjQ6MTI6MTJUMDA6MDk6NTArMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJzYXZlZCIKICAgICAgc3RFdnQ6Y2hhbmdlZD0iLyIKICAgICAgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDo4NTk3MzhjYy0wOTQwLTRlOTItYjNiYS02ZjU1OWY3Y2I0YzEiCiAgICAgIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkdpbXAgMi4xMCAoV2luZG93cykiCiAgICAgIHN0RXZ0OndoZW49IjIwMjQtMTItMTJUMDA6MDk6NTIiLz4KICAgIDwvcmRmOlNlcT4KICAgPC94bXBNTTpIaXN0b3J5PgogIDwvcmRmOkRlc2NyaXB0aW9uPgogPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgIAo8P3hwYWNrZXQgZW5kPSJ3Ij8+3GOj2QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+gMCxYJNMzvyXEAAAMdSURBVDjLdZNNTFxVAIW/e9+bvwcMAwwCA53agK0gCjaFFA02BmJbY0yt/1FXNpIuakx3tmvcmXTTDYm1JiZY2VhNY5r4s2BR6Q/QVNDpotEyZRCG6ZThvfl5c+91YUKaFM/uJCdncXI+wf9o6dxbg8bP9gskxmqYTx6burpdTjxscrMXHe/6mTEZ6zsV3PFcXNY+hkDjF9bQ92ayunB73Is/P9H16qfeIwX56S8ai8tz3wW7Dg4H255CeXmquTR2bQPCDmPHWiinb1FOXZoOJfqONB4Yy20V3JmciESYv+wMfDhsZIDNhR8RlQJqdYZI9zuUVn8nEOsi3PUCQgiKMxPTTu/hF6O9h5UECBcvjtm7Roa1gc3rk+jyA0Q0STB5CO25RNoGMBUX7+a3aOUTfOKlYW/2qxMAEiDQ0Hsq1PE0pdQvYAnC0XbkRhq9vgilNdRqCmmHEaF6/KUbBFq7ETXtpwHkyoVPBkXzM82m7KLdDKGmPeiNNHUHjhPqeZPQ7kPUDLyHMArLiVNZmcPoKnZif/yfqRN7pSmm++2GDnTJRcR2Ygor1Ox9m40fTlK+9TUy7FBcuESg/Vko5rGbulGb60inCV3M75OmWsAYg6m4mOI6WmuQ1n/7Wg4Yg/E9ZNBBqyrFezOoQhaDBlVC4jw+rwpryLo4wihktI3Naxeoe+Vzwj1H0WWPSN/rVDIpTCiK7TRjNyTQ7jo6WDcvAFamTq7VDH8c35ydQisfy64FN4tRHlZdB8rLIWpb8Ct5Ak4TzpMjeL+dzba+caZZAqjc7Li//CfOnlFMIY3vrUH9DkRNK8ZoiCWplO9j3BXCOwfxM4uo+wufbR0pn7rilG5O/uTsOzZkpIW3eJlq/g7GzaCCUexwDKtxN86uIRDgXZu4EuocHW0aOOptXXnp+7NJ21v8Jth5cCiQ6EG5OdT6XbS0CTV2ICP1lJbm8P/6eZr6/vcTLx+/+whMS7+ed0Tqy49EtPe01b4/Hoh1IIShml+mmrmRrT74Y9zufG0iMTLmbUvjw/r73LuDlp/pF3YEFWyZT35wfluc/wU9M1dZ45VLUgAAAABJRU5ErkJggg=="> <span crypto-badge-data="true" style="pointer-events: none !important;"></span>`;
+document.body.appendChild(infoElement);
 
 const observer = new MutationObserver(function (mutationsList, observer) {
     for (let { target } of mutationsList) {
