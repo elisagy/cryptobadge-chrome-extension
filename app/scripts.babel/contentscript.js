@@ -1,6 +1,8 @@
 'use strict';
-const styleSheet = document.styleSheets[0];
-const keyframes = `
+var keyFrameNotLoaded = false;
+try {
+    const styleSheet = document.styleSheets[0];
+    const keyframes = `
       @keyframes cryptoBadgeOpacityToggle {
         0%, 100% {
           opacity: 1;
@@ -10,7 +12,11 @@ const keyframes = `
         }
       }
     `;
-styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+    styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+}
+catch (e) {
+    keyFrameNotLoaded = true;
+}
 
 const regex = {
     eth: /(0x[A-Fa-f0-9]{40})/g,
@@ -101,15 +107,13 @@ function replaceTextNodes(node, symbol) {
 
                         const badgeElement = document.createElement("img");
                         badgeElement.setAttribute("src", "data:image/png;base64,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");
-                        badgeElement.setAttribute("style", `animation: cryptoBadgeOpacityToggle 1s infinite ease-in-out; cursor: pointer; margin: 0 0 4px 4px;`);
+                        badgeElement.setAttribute("style", `${keyFrameNotLoaded ? "opacity: 0;" : "animation: cryptoBadgeOpacityToggle 1s infinite ease-in-out;" } cursor: pointer; margin: 0 0 4px 4px;`);
                         addressSpan.appendChild(badgeElement);
 
                         addresses[address]
                             .then(((badgeElement) => (data) => {
                                 badgeElement.style.removeProperty("animation");
-                                if (!data) {
-                                    badgeElement.style.setProperty("opacity", "0.5", "important");
-                                }
+                                badgeElement.style.setProperty("opacity", data ? "1" : "0.5", "important");
 
                                 const bubbleElement = document.createElement("div");
                                 bubbleElement.setAttribute("crypto-badge-data", "true");
@@ -125,14 +129,14 @@ function replaceTextNodes(node, symbol) {
                                     display: none !important;
                                     font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif !important;
                                     font-size: 14px !important;
-                                    line-height: ${data ? "1.5" : "3.5" }em !important;
+                                    line-height: ${data ? "1.5" : "3.5"}em !important;
                                     padding: 8px !important;
                                     min-height: 3.5em !important;
                                     position: fixed !important;
                                     right: 10px !important;
                                     top: 10px !important;
                                     text-align: left !important;
-                                    ${data ? "" : "vertical-align: middle !important;" }
+                                    ${data ? "" : "vertical-align: middle !important;"}
                                     width: 600px !important;
                                     z-index: 2147483647 !important;
                                 `);
