@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Crypto Badge",
+    "description": "שם האפליקציה"
+  },
+  "appDescription": {
+    "message": "כלי אינטרנט לגישה קלה לנתוני קריפטו בדפי אינטרנט",
+    "description": "תיאור האפליקציה"
+  }
+}
