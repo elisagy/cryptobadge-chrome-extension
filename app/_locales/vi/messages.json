@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Crypto Badge",
+    "description": "Tên của ứng dụng"
+  },
+  "appDescription": {
+    "message": "Một công cụ web giúp truy cập dữ liệu tiền điện tử dễ dàng trên các trang web",
+    "description": "Mô tả của ứng dụng"
+  }
+}
