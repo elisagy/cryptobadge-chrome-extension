@@ -45,7 +45,11 @@ const regex = {
     };
 var infoElementTimeout;
 
-function closeAllBubbles() {
+function closeAllBubbles(e) {
+    if ((document.body !== e?.target && e?.target?.contains(e?.relatedTarget)) || (document.body !== e?.relatedTarget && e?.relatedTarget?.contains(e?.target))) {
+        return;
+    }
+
     while (openBubbles.length) {
         const openBubble = openBubbles.pop();
         openBubble.element.style.setProperty("display", "none", "important");
@@ -167,14 +171,15 @@ function replaceTextNodes(node, symbol) {
                                 if (data) {
                                     const price = prices.find(({ symbol: priceSymbol }) => priceSymbol === `${symbol.toUpperCase()}-USD`),
                                         formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", trailingZeroDisplay: "stripIfInteger" });
-                                    bubbleElement.innerHTML = `<b style="pointer-events: none !important;">${getLocale().address}:</b> ${data.address}<br><b style="pointer-events: none !important;">${getLocale().asset}:</b> ${data.asset}<br><b style="pointer-events: none !important;">${getLocale().balance}:</b> ${data.balance}${price ? ` (~${formatter.format(price.last_trade_price * data.balance)})` : ``}<br><b style="pointer-events: none !important;">${getLocale().firstTransactionDate}:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none !important;">${getLocale().lastTransactionDate}:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none !important;">${getLocale().lastUpdate}:</b> ${(new Date(data.updatedDate)).toString()}${data.graphsDataURIs?.map(graphDataURI => `<br><br><img src="${graphDataURI}" style="pointer-events: none !important;">`).join("")}`;
+                                    bubbleElement.innerHTML = `<b style="pointer-events: none !important;">${getLocale().address}:</b> ${data.address}<br><b style="pointer-events: none !important;">${getLocale().asset}:</b> ${data.asset}<br><b style="pointer-events: none !important;">${getLocale().balance}:</b> ${data.balance}${price ? ` (~${formatter.format(price.last_trade_price * data.balance)})` : ``}<br><b style="pointer-events: none !important;">${getLocale().firstTransactionDate}:</b> ${(new Date(data.firstTransactionDate)).toString()}<br><b style="pointer-events: none !important;">${getLocale().lastTransactionDate}:</b> ${(new Date(data.lastTransactionDate)).toString()}<br><b style="pointer-events: none !important;">${getLocale().lastUpdate}:</b> ${(new Date(data.updatedDate)).toString()}${data.graphsDataURIs?.map(graphDataURI => `<br><br><img src="${graphDataURI}" style="pointer-events: none !important;">`).join("")}<br><button onclick="window.open('https:\/\/api.cryptobadge.info\/${symbol}\/addresses\/${address.trim()}.xlsx')" style="background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAACPVBMVEUecUMVUTDj5ON8o40ZXTcecUMbZjxHcEwfckQfaUAbZjxHgmEeb0JllXoaYDljgnFpl30bZDvb390nbkYecEIaXzkeckMfckQfckQeb0IfckMeckMfckQeckMeckMeckMeckMeckMeckMfckMeckMYWTQbZj1VlHEfckMeckMdaz/M3tQkdUgfckMdbEAfckR4qo5smYAecUP7/fw1gFYod0sfckQdbEAecUOoyLbi7ec6g1vr8u5zpoq81MddmXiWvaf+/v79/v7u9PF/rpTg6+U5glmav6oic0ZKjWhSkm8ecEIcaD4bZz0VTy8WVDJtlH4XWDRUeWQaYTmvsrCfqKPV2dfh4+JDelwZXTYxY0hAbVRbfWqMrZvN1tHd4N4bZjweYz15n4ocZz1GgWB+k4cdZz5ik3i1x71xnISEl4wfWDjf4eAeVzjS2dWTsaCKrJmLrJodaD5klHkma0StwraPr517ooyzxruHqpZQh2hQiGmiu62ct6i4yb+9zMMfckTj5ONpl318o40ecUPH0swaZjw+fFpRiGlynYUcZz2duKmlvbAnbkZlnn9CiGEeckN9rZKNt6BemXg5glne6uQoeEsgckXx9vOBr5YqeU33+vm+1sny9/Q7dVVDelxkj3cZYDlmk3p5n4oxb0wpaUbCzcc/eFgaYDkaYzrY3dpSg2hVhmtPhWcfYz2MrZo9eVekvK9vmYJol32bt6gbZDuxxbp7ooyZtKWIq5ihuKsma0XE0crI082QsJ7UmDsBAAAAgHRSTlP+/v7+Ot1SAN3d/v50/v7+/v7+/hcGzvhHMJ7lbndgtZA+hafAAhD+Ve4h/v7XDNv+/iP+/v77Hzn+/v7+/v7+/v7+/v7+/v7+/v4qlKE6Uv46/lL+/v7+/hL+/v7+/v5R/v4f/v7H/v7+/v7+/v7+/v7O/v7+/v7+/v7+/v7+/lztCncAAAFISURBVCjPY2DHARiQ2HoW3hgSIhKyyrpmDDzIEkYaSvLSDBDg6x/MBgIJyUAJDoaGBghqYJjPv7iZubmZeXsRmsSC0GWr4lpb8xo5gRKsDAjAxygYy83FxcvEiaSjBYiXRK/dmNnRUdkIlZjsMH2Kdh9QYnnMpm2FnZ21MKM8nezdrXQgRhUgG9ViN2eGLcjyNVm79lb09NTDLfdydPUAWZ6YW1JWJSxsCLfcZe5sN5COddm791X39hrCLJ9lM3Oq5QSgxOrUHXtKu7vrYBKTnKdNNO4HSqxg3LqTu6uLF2aHiTWDqYE60I4I/qSMfGbmGhQPguxYGrVhS3p7e3kjusRCxpXrU9raijHCKiAkLDxeSCgHbJQ+ko55QYuaBJqaBDanASXUFGWkxMQhEj5+gSxgEAmLWlFJOQUVTdSoRQBVLXPsEigAAKhKd5MS7TjDAAAAAElFTkSuQmCC); border: none; height: 24px; width: 24px;" />`;
                                 }
                                 else {
                                     bubbleElement.innerHTML = `<b style="pointer-events: none !important;">Error:</b> Could not query address ${address}`;
                                 }
 
                                 bubbleElement.onmouseover = e => {
-                                    clearTimeout(openBubbles.find(({ element }) => element === e.target).timeout);
+                                    const openBubble = openBubbles.find(({ element }) => element === e.target);
+                                    openBubble && clearTimeout(openBubble.timeout);
                                 };
                                 bubbleElement.onmouseout = closeAllBubbles;
 
