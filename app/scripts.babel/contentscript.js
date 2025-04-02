@@ -189,6 +189,11 @@ function replaceTextNodes(node, symbol) {
                                     closeAllBubbles();
                                     bubbleElement.style.setProperty("display", "block", "important");
                                     openBubbles.push({ element: bubbleElement });
+
+                                    fetch("https://api.cryptobadge.info/insights/bubbleOpen", {
+                                        method: "POST",
+                                        body: JSON.stringify({ symbol, address: address.trim() }),
+                                    });
                                 };
                                 badgeElement.onmouseout = e => {
                                     openBubbles.find(({ element }) => element === bubbleElement).timeout = setTimeout((bubbleElement) => bubbleElement.style.setProperty("display", "none", "important"), 1000, bubbleElement);
