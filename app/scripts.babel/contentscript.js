@@ -193,6 +193,9 @@ function replaceTextNodes(node, symbol) {
                                     fetch("https://api.cryptobadge.info/insights/bubbleOpen", {
                                         method: "POST",
                                         body: JSON.stringify({ symbol, address: address.trim() }),
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        }
                                     });
                                 };
                                 badgeElement.onmouseout = e => {
